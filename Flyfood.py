@@ -3,12 +3,16 @@ import tsplib95, random, time
 tsp = tsplib95.load("./berlin52.tsp")
 restrooms = tsp.node_coords
 
-seed = None
+# ========================================================
+
+seed = None # Caso None gerara uma aleatoria
 pais = 2  # Número de pais para seleção
-prob_mutacao = 0.05  # Probabilidade de mutação
+prob_mutacao = 0.01  # Probabilidade de mutação
 tamanho_populacao = 100  # Tamanho da população
-isGeracional = True
 geracoes = 250  # Número de gerações
+type = 'roleta' # torneio | roleta
+
+# ========================================================
 
 def individuo():
     return random.sample(range(1, len(restrooms)+1), len(restrooms))
@@ -31,15 +35,35 @@ def compareWithMany(list):
     return sumAll
 
 def selectFathers(population):
-    # Torneio
-    candidateOne = random.choice(population)
-    candidateTwo = random.choice(population)
-    
-    while candidateTwo == candidateOne:
+    # Roleta
+    if type == 'roleta':
+        total = 0
+        value = 0
+        
+        # Inverter os valores de aptidão para que o menor valor tenha mais chance
+        aptidoes_invertidas = [1 / i[0] for i in population]
+        # Calcular o total das aptidões invertidas
+        total = sum(aptidoes_invertidas)
+        
+        check = random.random()
+        
+        for i in range(len(population)):
+            # Calcula a probabilidade de cada individuo
+            probabilidade = aptidoes_invertidas[i] / total
+            # Chega se o valor esta na faixa do individuo e o retorna caso sim 
+            if value <= check < value + probabilidade:
+                return population[i][1]
+            value += probabilidade
+    else:
+        # Torneio
+        candidateOne = random.choice(population)
         candidateTwo = random.choice(population)
-    if candidateOne[0] < candidateTwo[0]:
-        return candidateOne[1]
-    return candidateTwo[1]
+        
+        while candidateTwo == candidateOne:
+            candidateTwo = random.choice(population)
+        if candidateOne[0] < candidateTwo[0]:
+            return candidateOne[1]
+        return candidateTwo[1]
 
 def reproduction(pop):
     pontuados = [(compareWithMany(i), i) for i in pop] # Atribui o valor da distancia a rota
@@ -120,38 +144,27 @@ def principal():
     arquivo.write(f"\nprob_mutacao = {prob_mutacao}")
     arquivo.write(f"\ntamanho_populacao = {tamanho_populacao}")
     arquivo.write(f"\ngeracoes = {geracoes}")
-    
+    arquivo.write(f"\ntipo = {type}")
     arquivo.write("\n======================================\n")
     
-    if(isGeracional):
-      for i in range(geracoes):
-          # Seleção e Reprodução
-          pop = reproduction(pop)
-          
-          # Mutação
-          pop = mutacao(pop)
-          
-          # Imprimir resultados
-          melhor_fitness, melhor_individuo  = getBestSolution(pop)
-          arquivo.write(f"GENERATION: {i}\n")
-          arquivo.write("BEST ROUTE: [")
-          arquivo.write(', '.join(str(x) for x in melhor_individuo))
-          arquivo.write(f"]\nDISTANCE: {melhor_fitness}")
-          arquivo.write("\n======================================\n")
-          print(f"Geração: {i} | Melhor indivíduo: {melhor_individuo}, Aptidão: {melhor_fitness}")
-    else:
-      while (melhor_fitness != 10):
-          i += 1 
-          # Seleção e Reprodução
-          pop = reproduction(pop)
-          
-          # Mutação
-          pop = mutacao(pop)
-          
-          # Imprimir resultados
-          melhor_fitness, melhor_individuo  = getBestSolution(pop)
-          print(f"Geração: {i} | Melhor indivíduo: {melhor_individuo}, Aptidão: {melhor_fitness}")
+    for i in range(geracoes):
+        # Seleção e Reprodução
+        pop = reproduction(pop)
+        
+        # Mutação
+        pop = mutacao(pop)
+        
+        # Imprimir resultados
+        melhor_fitness, melhor_individuo  = getBestSolution(pop)
+        arquivo.write(f"GENERATION: {i}\n")
+        arquivo.write("BEST ROUTE: [")
+        arquivo.write(', '.join(str(x) for x in melhor_individuo))
+        arquivo.write(f"]\nDISTANCE: {melhor_fitness}")
+        arquivo.write("\n======================================\n")
+    print(f"Melhor indivíduo: {melhor_individuo}, Aptidão: {melhor_fitness}")
+    
 
 
 if __name__ == "__main__":
     principal()
+
